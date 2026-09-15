@@ -31,12 +31,15 @@ export function createApp(options = {}) {
   app.set('trust proxy', 1);
 
   // --- CORS ---------------------------------------------------------------
-  // Allow the configured dev origins, plus any loopback origin so a shifted
-  // Vite port or a 127.0.0.1 binding does not break local development.
+  // Applied to /api ONLY, deliberately.
   //
-  // Both `localhost` and `127.0.0.1` are needed: Vite binds one or the other
-  // depending on config, and the browser sends whichever is in the address
-  // bar as the Origin header. They are the same machine either way.
+  // CORS is a browser rule about cross-origin *fetch* calls. Static assets and
+  // the SPA shell are same-origin and never need it. Applying it globally
+  // creates a nasty failure mode: Vite tags its bundles with `crossorigin`, so
+  // the browser sends an Origin header for /assets/*.js. A CLIENT_ORIGIN typo
+  // then returns 403 for the JavaScript, React never mounts, and the site is a
+  // blank white page with no hint as to why. Scoping it here means a typo
+  // surfaces as failing API calls - visible and debuggable - instead.
   //
   // Note: the callback is given an ApiError so a rejected origin produces a
   // clean 403 instead of a 500 with a stack trace. The browser blocks the
@@ -44,6 +47,7 @@ export function createApp(options = {}) {
   const LOOPBACK_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]):\d+$/;
 
   app.use(
+    '/api',
     cors({
       origin(origin, callback) {
         if (!origin) return callback(null, true); // curl / Postman

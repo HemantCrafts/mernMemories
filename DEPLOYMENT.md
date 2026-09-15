@@ -380,6 +380,36 @@ the same image any Docker host (Fly.io, Railway, a VPS) would run.
 
 ## Troubleshooting
 
+**Blank white page, console shows `403` on `/assets/*.js` and `*.css`**
+`CLIENT_ORIGIN` does not match the URL in the address bar.
+
+This one is worth understanding, because it looks like a broken build and is
+actually a config typo. Vite tags its bundles with `crossorigin`, so the browser
+sends an `Origin` header when fetching them. If that origin is not in
+`CLIENT_ORIGIN`, the server rejects the JavaScript, React never mounts, and you
+get a blank page with no visible error on the page itself.
+
+**The usual cause is the hostname.** Render appends a suffix when the name you
+want is taken, so the service URL is often not the obvious one — the deploy log
+prints it explicitly:
+
+```
+==> Available at your primary URL https://mern-memories-j7f2.onrender.com
+```
+
+Copy that value **exactly** (mind `j7f2` vs `7f2`) into `CLIENT_ORIGIN`, then
+redeploy. The server also warns at boot if the two disagree:
+
+```
+[config] CLIENT_ORIGIN does not match this service's public URL.
+[config]   public URL    : https://mern-memories-j7f2.onrender.com
+[config]   CLIENT_ORIGIN : https://mern-memories.onrender.com
+```
+
+> As of the `app.use('/api', cors(...))` change, a `CLIENT_ORIGIN` typo no longer
+> blanks the page — CORS is scoped to `/api` only, so the site still renders and
+> the failure shows up as failing API calls instead. On older builds it blanks.
+
 **Deploy fails: `Could not connect to any servers in your MongoDB Atlas cluster`**
 The Atlas IP allowlist. See "If your deploy already failed" at the top of this
 document. This is the most common deploy failure by a wide margin.

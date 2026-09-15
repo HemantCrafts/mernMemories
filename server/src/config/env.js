@@ -87,6 +87,31 @@ if (isProduction && clientOrigins.length === 0) {
   process.exit(1);
 }
 
+/**
+ * Render sets RENDER_EXTERNAL_URL to the service's real public URL - which is
+ * often not the name you asked for. If the hostname was already taken, Render
+ * appends a suffix (`mern-memories` becomes `mern-memories-j7f2`). A
+ * CLIENT_ORIGIN that does not match means the browser's Origin header is
+ * rejected, so every API call 403s and the app looks broken for no visible
+ * reason.
+ *
+ * Warn rather than exit: a custom domain, or serving through a proxy, are both
+ * legitimate reasons for the two to differ.
+ */
+if (isProduction && process.env.RENDER_EXTERNAL_URL) {
+  const publicUrl = process.env.RENDER_EXTERNAL_URL.replace(/\/+$/, '');
+
+  if (!clientOrigins.includes(publicUrl)) {
+    console.warn('');
+    console.warn('[config] CLIENT_ORIGIN does not match this service\'s public URL.');
+    console.warn(`[config]   public URL    : ${publicUrl}`);
+    console.warn(`[config]   CLIENT_ORIGIN : ${clientOrigins.join(', ')}`);
+    console.warn('[config] Requests from the public URL will be rejected with 403.');
+    console.warn('[config] Add it to CLIENT_ORIGIN (comma-separated) and redeploy.');
+    console.warn('');
+  }
+}
+
 export const config = {
   port: Number(process.env.PORT) || 5000,
   nodeEnv,
