@@ -125,14 +125,32 @@ else.
 
 **Then allowlist them in Atlas:**
 
-4. Open [cloud.mongodb.com](https://cloud.mongodb.com) → your cluster
-5. **Security → Network Access** → **+ Add IP Address**
-6. Paste one range, description `render`, **Confirm**
-7. Repeat for each range; wait for the entries to become **Active**
+4. Open [cloud.mongodb.com](https://cloud.mongodb.com) and pick your project
+5. In the left sidebar, under the **Security** heading, click **Network Access**
+   (some newer console versions nest this as **Database & Network Access** —
+   same page, same setting)
+6. Click **Add IP Address**, top right
+7. In the **IP Address or CIDR** field, type the range exactly as Render showed
+   it, e.g. `216.24.60.0/24`. There is **no separate "CIDR" option to select** —
+   a CIDR block goes in the same field as a plain IP address.
+8. Add a comment (`render`) so future-you knows where it came from
+9. Click **Confirm**. The entry appears as **Pending**, then flips to **Active**
+   within a minute or two
+10. Repeat steps 6–9 for each remaining range
 
-> **If the Outbound tab is missing:** you are probably on the workspace home page.
-> If your workspace was created before 23 January 2022 *and* the service is in
-> Oregon, it genuinely has no fixed ranges — use `0.0.0.0/0` in that case only.
+> **Do not click "Add Current IP Address".** It is the most prominent option in
+> the dialog, but it allowlists *your laptop* — which is already allowed and does
+> nothing for Render. Every range has to be typed in by hand.
+
+> **If the Outbound tab is missing in Render:** you are probably on the workspace
+> home page. If your workspace was created before 23 January 2022 *and* the
+> service is in Oregon, it genuinely has no fixed ranges — use `0.0.0.0/0` in
+> that case only.
+
+Atlas calls this the **IP access list**; older docs and error messages say "IP
+whitelist". Same thing. Entries accept both single IPs and CIDR ranges, apply to
+every cluster in the project, and require the **Project Owner** or **Project
+Network Access Manager** role.
 
 **Why this matters:** `0.0.0.0/0` would mean "any host on the internet may attempt
 a connection". It is survivable because the database still requires a username
