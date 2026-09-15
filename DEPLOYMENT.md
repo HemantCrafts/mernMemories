@@ -125,7 +125,10 @@ else.
 
 **Then allowlist them in Atlas:**
 
-4. Open [cloud.mongodb.com](https://cloud.mongodb.com) and pick your project
+4. Open [cloud.mongodb.com](https://cloud.mongodb.com). If you land on
+   **All Projects**, that is the *organization* level — click the name of the
+   project that holds your cluster first (see the warning below). You cannot
+   reach Network Access from the organization level.
 5. In the left sidebar, under the **Security** heading, click **Network Access**
    (some newer console versions nest this as **Database & Network Access** —
    same page, same setting)
@@ -137,6 +140,18 @@ else.
 9. Click **Confirm**. The entry appears as **Pending**, then flips to **Active**
    within a minute or two
 10. Repeat steps 6–9 for each remaining range
+
+> **The sidebar has no Security section?** You are at the **organization** level.
+> Atlas shows only org-wide settings there (Identity & Access, Billing,
+> Configurations). The `Security` group — and therefore Network Access — only
+> appears once you are inside a **project**. Click a project name in the Project
+> Name column to enter it.
+
+> **The IP access list is per project, not per organization.** Adding ranges to
+> the wrong project does nothing for your app. Identify the right project by
+> checking which one contains your cluster: the connection string points at
+> `cluster0.<shard>.mongodb.net`, so open each project and confirm the cluster's
+> hostname matches. Do not guess from the project name alone.
 
 > **Do not click "Add Current IP Address".** It is the most prominent option in
 > the dialog, but it allowlists *your laptop* — which is already allowed and does
