@@ -22,19 +22,37 @@ dashboard action on Atlas.** The connection string is fine — the same one work
 from your laptop. Atlas is refusing Render's IP address because it is not on the
 allowlist.
 
-Fix it in about a minute:
+### Get Render's exact IP ranges (preferred — do not open the database to everyone)
 
-1. Open [cloud.mongodb.com](https://cloud.mongodb.com) → your cluster
-2. **Security → Network Access** (older UI: **Network Access** in the sidebar)
-3. **+ Add IP Address**
-4. Enter `0.0.0.0/0` and give it a description like `render`
-5. **Confirm** — the entry appears as "Pending", then flips to **Active** within
-   a minute or two
-6. Back in Render: **Manual Deploy → Deploy latest commit**
+Render sends outbound traffic from **fixed CIDR ranges that are shared by all
+services in a region**. You can allowlist just those ranges, which keeps the
+database reachable from Render and nowhere else.
 
-`0.0.0.0/0` means "any host may *attempt* a connection". It is safe here because
-the database still requires the username and password, and this is the standard
-trade-off for any PaaS whose outbound IPs are not fixed.
+1. In the [Render Dashboard](https://dashboard.render.com), open **your service**
+   (not the workspace home — the tab only exists on a service page)
+2. Click the **Connect** dropdown in the upper right
+3. Switch to the **Outbound** tab
+4. Copy every listed CIDR range (e.g. `216.24.60.0/24`)
+
+Then, in [Atlas](https://cloud.mongodb.com):
+
+5. **Security → Network Access** (older UI: **Network Access** in the sidebar)
+6. **+ Add IP Address** → paste one range → description `render` → **Confirm**
+7. Repeat for each remaining range
+8. Wait for the entries to flip from "Pending" to **Active** (a minute or two)
+9. Back in Render: **Manual Deploy → Deploy latest commit**
+
+> **If the Outbound tab is missing**, either you are on the workspace home page,
+> or your workspace predates 23 January 2022 and is in the Oregon region — those
+> older Oregon workspaces genuinely have no fixed ranges. Only in that case fall
+> back to `0.0.0.0/0` below.
+
+### Fallback: allow everything
+
+If you cannot use the ranges above, add `0.0.0.0/0` instead. It means "any host
+may *attempt* a connection", and it is safe enough because the database still
+requires the username and password — but it is strictly worse than listing
+Render's ranges, so prefer those.
 
 **How to tell this apart from a credentials problem:** a wrong password produces
 `bad auth : Authentication failed`, not the whitelist message. The two are
@@ -46,9 +64,9 @@ different errors with different fixes.
 
 **1. MongoDB is not provided by Render.** Render has no managed MongoDB, so the
 app keeps using your existing **MongoDB Atlas** cluster. That cluster must be
-reachable from Render's servers, which means widening the Atlas IP allowlist.
-**Do Step 2 before the first deploy** — skipping it is the most common reason a
-deploy fails.
+reachable from Render's servers, which means allowlisting Render's outbound IP
+ranges in Atlas. **Do Step 2 before the first deploy** — skipping it is the most
+common reason a deploy fails.
 
 **2. The free tier has no persistent disk.** Render's free instances use an
 ephemeral filesystem, so **uploaded images are deleted whenever the instance
@@ -93,19 +111,36 @@ git push -u origin main
 
 ## Step 2 — Allow Render to reach Atlas
 
-In the [Atlas dashboard](https://cloud.mongodb.com):
+Render sends outbound traffic from **fixed CIDR ranges shared by all services in
+a region** (see [Render's outbound IP docs](https://render.com/docs/outbound-ip-addresses)).
+Allowlist exactly those, so the database is reachable from Render and nowhere
+else.
 
-1. Open your cluster → **Network Access** → **Add IP Address**
-2. Choose **Allow Access from Anywhere** (`0.0.0.0/0`)
+**Get the ranges from Render first:**
 
-**Why this is required:** Render's outbound IPs are not fixed on the free tier,
-so you cannot allowlist a single address. `0.0.0.0/0` means "any host may
-attempt a connection" — it is safe *only* because the database still requires a
-username and password. This is the standard trade-off for PaaS hosting.
+1. Open [your service](https://dashboard.render.com) — the service page, not the
+   workspace home
+2. Click **Connect** (upper right) → **Outbound** tab
+3. Copy every CIDR range listed
 
-> If you would rather not open the database to all IPs, the alternative is a
-> paid Render plan with static outbound IPs, or hosting on a VPS you control.
-> For a portfolio project the credential-protected `0.0.0.0/0` is normal.
+**Then allowlist them in Atlas:**
+
+4. Open [cloud.mongodb.com](https://cloud.mongodb.com) → your cluster
+5. **Security → Network Access** → **+ Add IP Address**
+6. Paste one range, description `render`, **Confirm**
+7. Repeat for each range; wait for the entries to become **Active**
+
+> **If the Outbound tab is missing:** you are probably on the workspace home page.
+> If your workspace was created before 23 January 2022 *and* the service is in
+> Oregon, it genuinely has no fixed ranges — use `0.0.0.0/0` in that case only.
+
+**Why this matters:** `0.0.0.0/0` would mean "any host on the internet may attempt
+a connection". It is survivable because the database still requires a username
+and password, but listing Render's ranges is strictly better and just as easy.
+Only reach for `0.0.0.0/0` if the ranges are genuinely unavailable to you.
+
+**Skip this step and the deploy will fail** with the whitelist error — this is
+the most common deploy failure for this project by a wide margin.
 
 ---
 

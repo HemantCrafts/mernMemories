@@ -22,9 +22,9 @@ export function diagnoseConnectionFailure(error) {
       'Cause: Atlas refused the connection from this IP address.',
       ...(isProduction
         ? [
-            'Fix: add 0.0.0.0/0 in Atlas > Security > Network Access.',
-            '     Render has no fixed outbound IP on the free tier, so the',
-            '     whole range must be allowed. The password still protects it.',
+            'Fix: add this service to Atlas > Security > Network Access.',
+            "     Render's outbound ranges: your service > Connect > Outbound.",
+            '     (0.0.0.0/0 also works but is needlessly broad - prefer the ranges.)',
           ]
         : ['Fix: add your current IP in Atlas > Security > Network Access.']),
     ];
