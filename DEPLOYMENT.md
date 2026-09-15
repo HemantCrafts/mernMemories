@@ -7,11 +7,48 @@ Total time: roughly 15–20 minutes, most of it waiting for the first build.
 
 ---
 
+## If your deploy already failed, read this first
+
+The single most common failure is the deploy ending with:
+
+```
+[db] Connection attempt 3/3 failed: Could not connect to any servers in your
+MongoDB Atlas cluster. One common reason is that you're trying to access the
+database from an IP that isn't whitelisted.
+```
+
+**This is not a code or config problem. It is Step 2 below, and it is a
+dashboard action on Atlas.** The connection string is fine — the same one works
+from your laptop. Atlas is refusing Render's IP address because it is not on the
+allowlist.
+
+Fix it in about a minute:
+
+1. Open [cloud.mongodb.com](https://cloud.mongodb.com) → your cluster
+2. **Security → Network Access** (older UI: **Network Access** in the sidebar)
+3. **+ Add IP Address**
+4. Enter `0.0.0.0/0` and give it a description like `render`
+5. **Confirm** — the entry appears as "Pending", then flips to **Active** within
+   a minute or two
+6. Back in Render: **Manual Deploy → Deploy latest commit**
+
+`0.0.0.0/0` means "any host may *attempt* a connection". It is safe here because
+the database still requires the username and password, and this is the standard
+trade-off for any PaaS whose outbound IPs are not fixed.
+
+**How to tell this apart from a credentials problem:** a wrong password produces
+`bad auth : Authentication failed`, not the whitelist message. The two are
+different errors with different fixes.
+
+---
+
 ## Before you start: two things to know
 
 **1. MongoDB is not provided by Render.** Render has no managed MongoDB, so the
 app keeps using your existing **MongoDB Atlas** cluster. That cluster must be
 reachable from Render's servers, which means widening the Atlas IP allowlist.
+**Do Step 2 before the first deploy** — skipping it is the most common reason a
+deploy fails.
 
 **2. The free tier has no persistent disk.** Render's free instances use an
 ephemeral filesystem, so **uploaded images are deleted whenever the instance
@@ -275,6 +312,16 @@ the same image any Docker host (Fly.io, Railway, a VPS) would run.
 
 ## Troubleshooting
 
+**Deploy fails: `Could not connect to any servers in your MongoDB Atlas cluster`**
+The Atlas IP allowlist. See "If your deploy already failed" at the top of this
+document. This is the most common deploy failure by a wide margin.
+
+**Deploy fails: `bad auth : Authentication failed`**
+Different problem, same symptom shape — the password is wrong. Check the
+database user password inside `MONGODB_URI`, and URL-encode it if it contains
+`@ : /` or `#`. If you changed the password in Atlas, update the variable in
+Render and redeploy.
+
 **Build fails: `vite: not found`**
 The build command must include `--include=dev`. Vite, Tailwind and PostCSS are
 `devDependencies`, and hosting platforms default to omitting them.
@@ -288,6 +335,11 @@ are a trailing-slash and non-trailing-slash form.
 The app takes up to ~40 seconds to fail a bad Atlas connection (3 retries with
 timeouts). A wrong `MONGODB_URI` therefore looks like a hung deploy. Check the
 logs for `[db] Connection attempt`.
+
+**The `[db]` error output is now specific**
+`server/src/config/db.js` classifies the failure and prints the matching fix, so
+the last lines of a failed boot name the actual cause instead of listing three
+possibilities. Read the `Cause:` and `Fix:` lines before anything else.
 
 **Deploy succeeds, then the site is slow for the first request**
 Render's free tier sleeps after ~15 minutes idle and cold-starts in 30–60

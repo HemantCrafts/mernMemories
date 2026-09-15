@@ -39,3 +39,7 @@ server/uploads/
 .dockerignore is committed on purpose; build context exclusions live there.
 # Local docker-compose overrides (may contain secrets)
 docker-compose.override.yml
+
+# Assistant working notes / memory. Not application code - keep it out of the
+# repo. Safe to delete this rule if you ever want these tracked.
+.workbuddy-ai/
