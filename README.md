@@ -834,6 +834,4 @@ The test suite covers the behaviours marked ✅ below; the rest are known gaps.
 
 ---
 
-## License
 
-MIT — use it however you like.
