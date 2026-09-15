@@ -1,0 +1,26 @@
+{
+  "name": "mern-memories",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MERN Memories - a social feed web application built on the MERN stack (MongoDB Atlas, Express, React, Node.js)",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "seed": "npm --prefix server run seed",
+    "cleanup:uploads": "npm --prefix server run cleanup:uploads",
+    "cleanup:help": "node server/src/cleanup.js --help",
+    "test": "npm --prefix server test",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

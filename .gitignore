@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# Vite
+.vite/
+client/dist/
+
+# Uploaded images (user content - never commit)
+server/uploads/
+!server/uploads/.gitkeep
+
+# Docker
+.dockerignore is committed on purpose; build context exclusions live there.
+# Local docker-compose overrides (may contain secrets)
+docker-compose.override.yml

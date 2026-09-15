@@ -1,0 +1,83 @@
+# ============================================================
+#  Render Blueprint — MERN Memories (MERN social feed)
+#
+#  Deploy:  Render Dashboard -> New -> Blueprint -> pick this repo
+#  Render reads this file and provisions everything below.
+#
+#  Two services are declared:
+#    - mern-memories-api    : the Express API + the built React app
+#    - mern-memories-redis  : NOT declared, because the app does not need it
+#
+#  MongoDB is NOT declared here. Render offers no managed MongoDB, so this
+#  app uses MongoDB Atlas (free tier) and you paste the connection string
+#  into the MONGODB_URI environment variable. Atlas must be reachable from
+#  Render, so its Network Access list needs to allow 0.0.0.0/0 or your
+#  Render outbound IPs.
+# ============================================================
+
+services:
+  - type: web
+    name: mern-memories
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+
+    # Build from the REPO ROOT so the client build lands in client/dist
+    # where the server looks for it in production (see server/src/app.js).
+    # --include=dev is required: vite/tailwind are devDependencies and the
+    # client build cannot run without them.
+    buildCommand: |
+      npm install --include=dev
+      npm --prefix client install --include=dev
+      npm --prefix server install --include=dev
+      npm --prefix client run build
+
+    # --prefix server so node resolves server/node_modules. The server also
+    # serves client/dist, so this single process is the whole app.
+    startCommand: npm --prefix server start
+
+    # Render pings this to decide the deploy succeeded. It must return 200
+    # without needing a database round-trip.
+    healthCheckPath: /api/health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Render sets PORT automatically; the app reads it via config.port.
+      # Do not hardcode it here.
+
+      - key: NODE_VERSION
+        value: '22'
+
+      # --- Secrets: set these in the Render dashboard, not here ---
+      # sync: false means "prompt me in the UI, never store in git".
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+      # The public Render URL, e.g. https://mern-memories.onrender.com
+      # Required: the browser sends this as the Origin header, and CORS
+      # rejects anything not listed. Comma-separate multiple origins.
+      - key: CLIENT_ORIGIN
+        sync: false
+
+      # Free tier has no persistent disk, so uploads are lost on restart.
+      # Uncomment the disk block below (paid plans) to persist them.
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+
+    # --- Persistent disk for uploaded images (paid plans only) ---
+    # Free instances cannot mount disks. With a disk, images survive
+    # restarts and redeploys; without one, every uploaded image is deleted
+    # whenever the instance restarts (which the free tier does after idle).
+    #
+    # disk:
+    #   name: mern-memories-uploads
+    #   mountPath: /var/data
+    #   sizeGB: 1
